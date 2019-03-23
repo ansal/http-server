@@ -1,8 +1,6 @@
 # An example TCP client.
 # Retrieves a web page from a server.
 
-
-import sys
 import socket
 
 
