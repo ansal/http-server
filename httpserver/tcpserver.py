@@ -68,12 +68,93 @@ class TCPServer:
                     self._readers
                 )
 
-            # Process the sockest that need to be read from
+            # Process the socketd that need to be read from
             for socket in read:
-                pass
+
+                # If the socket is our server socket, then it means that there
+                # is a client waiting at the other end to connect
+                if socket is self._socket:
+
+                    # If you want the IP, you can get it from the second value
+                    # of the tuple below _
+                    client_socket, _ = self._socket.accept()
+                    client_socket.setblocking(0) # Make it non-blocking.
+
+                    # Add the socket to the list of readers list
+                    self._readers.append(client_socket)
+
+                    # And give it a queue for any callback to put data
+                    self.queue[client_socket] = queue.Queue()
+
+                else:
+
+                    # This is some other client trying to send us data. So read
+                    # that data.
+                    try:
+                        data = socket.recv(self.bytes_count)
+                    except Exception as e:
+                        raise e
+
+                    # If there is data from the socket, call the callback and
+                    # put the socket in the writer list incase the callback
+                    # decided to put some data in the queue and we have to send
+                    # it to the client later.
+                    if data:
+                        if self.callback is not None:
+                            self.callback(self.queue[socket], data)
+
+                        if socket not in self._writers:
+                            self._writers.append(socket)
+
+                    else:
+
+                        # We have received no data ie zero bytes. So close the
+                        # connection and remove the socket.
+                        self.remove_socket(socket)
+
+            # Process the sockets that need to be written to
+            for socket in write:
+
+                # Get the data from the queue
+                try:
+                    data = self.queue[socket].get_nowait()
+                except queue.Empty:
+                    # The queue is empty. The callback probably didn't put any
+                    # data in it. Hence remove it from the writer list
+                    self._writers.remove(socket)
+                else:
+                    # Callback has put some data in the queue. So send it back
+                    # to the client.
+                    socket.send(data)
+
+                    # Once the data is send, remove the socket from everywhere,
+                    # destroy the queue and close it.
+                    self.remove_socket(socket)
+
+            # Process the sockets that have errors
+            for socket in err:
+
+                # Remove and close the socket
+                self.remove_socket(socket)
+
+    def remove_socket(self, socket):
+
+        # Remove the socket from both lists, destroy the queue and close the
+        # socket.
+
+        if socket in self._readers:
+            self._readers.remove(socket)
+
+        if socket in self._writers:
+            self._writers.remove(socket)
+
+        del self.queue[socket]
+
+        socket.close()
+
 
 if __name__ == '__main__':
-    server = TCPServer('127.0.0.1', 3000)
+    server = TCPServer('127.0.0.1', 8000)
     server.start()
     server.run()
 
