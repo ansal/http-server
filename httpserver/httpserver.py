@@ -3,6 +3,7 @@
 from http import HTTPStatus
 
 from tcpserver import TCPServer
+from handler import FileSystemHandler
 
 
 # Supported HTTP methods
@@ -69,7 +70,7 @@ class HTTPServer(TCPServer):
     server_version = "HTTPServer/0.1"
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, callback=self.tcp_callback, **kwargs)
+        super().__init__(*args, callback=self.tcp_callback, bytes_count=65536, **kwargs)
 
     def tcp_callback(self, queue, data):
         """ Callback for the TCP Server """
@@ -79,7 +80,10 @@ class HTTPServer(TCPServer):
 
         if not status:
             print(self.error_code, self.error_text)
-
+            queue.put(self.error_text)
+        else:
+            response = self.handle_request()
+            queue.put(response)
 
     def parse_request(self, data):
         """
@@ -102,20 +106,29 @@ class HTTPServer(TCPServer):
         # Split the request into different lines
         words = self.request.split()
 
-        # Get the request method and see if it is in the supported list
+        # A proper server should check the request version, headers etc. I am
+        # only checking if the HTTP method is supported, nothing else.
+
+        # Get the request method and see if it is in the supported list.
+        # If it is not in the supported methods, set the errors and return
         method = words[0]
         if method not in SUPPORTED_METHODS:
             self.error_code = HTTPStatus.METHOD_NOT_ALLOWED
             self.error_text = "Not a supported method!"
             return False
 
-        print(words)
+        # Set the method and path
+        self.method = method
+        self.path = words[1]
+
+        # Tell the callback that everything went fine.
         return True
 
 
     def handle_request(self):
         """ Handles a single HTTP request """
-        pass
+        handler = FileSystemHandler(self.method, self.path)
+        return handler.handle()
 
 
     def send_header(self):
