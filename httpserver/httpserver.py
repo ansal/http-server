@@ -1,6 +1,12 @@
 # A simple implementation of HTTP server.
 
+from http import HTTPStatus
+
 from tcpserver import TCPServer
+
+
+# Supported HTTP methods
+SUPPORTED_METHODS = ("HEAD", "GET", )
 
 
 # Default error message and type
@@ -62,10 +68,49 @@ ERROR_CONTENT_TYPE = "text/html;charset=utf-8"
 class HTTPServer(TCPServer):
     server_version = "HTTPServer/0.1"
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, callback=self.tcp_callback, **kwargs)
 
-    def parse_request(self):
-        """ Parses a HTTP request """
-        pass
+    def tcp_callback(self, queue, data):
+        """ Callback for the TCP Server """
+
+        # Once we have data from the TCP server, parse it first
+        status = self.parse_request(data)
+
+        if not status:
+            print(self.error_code, self.error_text)
+
+
+    def parse_request(self, data):
+        """
+        Parses a HTTP request.
+        Returns True if it was able to parse the request successfully.
+        Returns False otherwise.
+        """
+
+        # The error code and text that will be sent to the client if an error occurs
+        self.error_code = None
+        self.error_text = ""
+
+        # Store the raw request came from the client
+        self.raw_request = data
+        self.request = str(self.raw_request, 'iso-8859-1')
+
+        # Strip the last two new lines
+        self.request = self.request.rstrip("\r\n")
+
+        # Split the request into different lines
+        words = self.request.split()
+
+        # Get the request method and see if it is in the supported list
+        method = words[0]
+        if method not in SUPPORTED_METHODS:
+            self.error_code = HTTPStatus.METHOD_NOT_ALLOWED
+            self.error_text = "Not a supported method!"
+            return False
+
+        print(words)
+        return True
 
 
     def handle_request(self):
