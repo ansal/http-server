@@ -1,5 +1,8 @@
 # HTTP handlers implementation
 
+import os
+import urllib.parse
+
 
 class FileSystemHandler:
     """
@@ -7,29 +10,103 @@ class FileSystemHandler:
         Serves static files from a directory provided with appropriate MIME type.
     """
 
-    def __init__(self, method, path):
+    def __init__(self, method, path, directory=None):
+
+        # HTTP Method
         self.method = method
+
+        #URL Path
         self.path = path
+
+        # Header list
+        self.headers = []
+
+        # Response buffer
+        self.response_buffer = ""
+
+        # The directory to serve file
+        if directory is None:
+            directory = os.getcwd()
+        self.directory = directory
 
 
     def handle(self):
         """
             Handles a HTTP method.
         """
-        print(self.method, self.path)
 
-        # TODO: Remove the below temporary method
-        header = """
-HTTP/1.0 200 OK
-Server: SimpleHTTP/0.6 Python/2.7.13
-Date: Wed, 03 Apr 2019 13:44:50 GMT
-Content-type: text/html
-Content-Length: 277
-Last-Modified: Wed, 03 Apr 2019 12:39:02 GMT
+        # Check if a supported HTTP method is requested by the client
+        # If not raise an exception.
+        # 
+        # TODO: We are not likely to come here as the http callback will itself
+        # handle the http method not implemented part.
+        #
+        method_function = "process_" + self.method
+        if not hasattr(self, method_function):
+            raise Exception("Method not supported")
 
-"""
-        html = open("test.html").read()
-        print(len(html))
+        method = getattr(self, method_function)
+        method()
 
-        return bytes(header + html, "utf-8")
+        return (self.headers, self.response_buffer)
+
+
+    def send_header(self, file_name):
+        """ Sends the header for a request """
+        self.headers.append("HTTP/1.0 200 OK")
+        self.set_header("Server", "ToyServer/0.1")
+        self.set_header("Content-type", "text/html")
+
+
+    def set_header(self, name, value):
+        """ Set the headers of the response """
+        self.headers.append("{}: {}\r\n".format(name, value))
+
+
+    def end_header(self):
+        """ Ends header by appending  \r\n at the end of it """
+        self.headers.append("\r\n")
+
+
+    def process_HEAD(self):
+        """ Processes HEAD request """
+        pass
+
+
+    def process_GET(self):
+        """ Processes GET request """
+        file_name = self.get_file_path()
+        self.send_header(file_name)
+        self.response_buffer = self.read_file(file_name)
+        self.set_header("Content-length", len(self.response_buffer))
+        self.end_header()
+
+
+    def get_file_path(self):
+        """ Returns the absolute file system path of the requested file """
+
+        # Discard query parameters and hash URL fragments
+        file_path = self.path.split("?", 1)[0]
+        file_path = file_path.split("#", 1)[0]
+
+        # Unquote all url characters
+        file_path = urllib.parse.unquote(file_path)
+
+        return self.directory + file_path
+
+
+    def read_file(self, file_name):
+        """ Reads a file and return its contents """
+        try:
+            f = open(file_name)
+        except IsADirectoryError:
+            # If a directory is specified as the path, try reading index.html
+            # from the path.
+            print(file_name + "index.html")
+            try:
+                f = open(file_name + "index.html")
+            except Exception as e:
+                raise e
+
+        return f.read()
 

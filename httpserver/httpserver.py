@@ -80,9 +80,18 @@ class HTTPServer(TCPServer):
 
         if not status:
             print(self.error_code, self.error_text)
-            queue.put(self.error_text)
+            queue.put(bytes(self.error_text, "utf-8"))
         else:
-            response = self.handle_request()
+            headers, data = self.handle_request()
+            response = "".join(headers) + data + "\r\n"
+
+            print(headers)
+
+            print(response)
+
+            # Socket needs data in byte
+            response = bytes(response, "utf-8")
+
             queue.put(response)
 
     def parse_request(self, data):

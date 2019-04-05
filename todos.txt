@@ -22,5 +22,3 @@ Request logger
 process_GET for serving GET requests
 
 process_HEAD for serving HEAD requests
-
-A directory lister probably?
