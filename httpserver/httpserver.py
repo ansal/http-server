@@ -52,6 +52,8 @@ SUPPORTED_METHODS = ("HEAD", "GET", )
 # Similar to request, headers and data are separated by blank lines.
 
 class HTTPServer(TCPServer):
+
+    # Server version
     server_version = "HTTPServer/0.1 github.com/ansal/http-server"
 
 
@@ -121,7 +123,7 @@ class HTTPServer(TCPServer):
     def handle_request(self):
         """ Handles a single HTTP request """
         handler = FileSystemHandler(self.method, self.path,
-                directory=self.directory)
+                directory=self.directory, server_version=self.server_version)
         self.headers, self.data = handler.handle()
 
 

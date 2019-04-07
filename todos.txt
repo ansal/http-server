@@ -1,7 +1,5 @@
 Send proper Server name and version
 
-Request logger
-
 process_HEAD for serving HEAD requests
 
 Sending binary objects like images

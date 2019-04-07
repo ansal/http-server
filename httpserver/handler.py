@@ -11,13 +11,16 @@ class FileSystemHandler:
         Serves static files from a directory provided with appropriate MIME type.
     """
 
-    def __init__(self, method, path, directory=None):
+    def __init__(self, method, path, directory=None, server_version="HttpServer0.1"):
 
         # HTTP Method
         self.method = method
 
         #URL Path
         self.path = path
+
+        # Server version
+        self.server_version = server_version
 
         # Header list
         self.headers = []
@@ -56,7 +59,7 @@ class FileSystemHandler:
 
         # Server name
         # TODO: Remove the hard coding
-        self.set_header("Server", "ToyServer/0.1")
+        self.set_header("Server", self.server_version)
 
         # Content type of the resource
         self.set_header("Content-type", mimetypes.guess_type(self.file_path)[0])
