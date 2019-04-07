@@ -36,7 +36,7 @@ class TCPClient:
         returned_data = b''
         while True:
             chunk = self._socket.recv(self.bytes_count)
-            
+
             # The recv method returns an empty byte object if there is no more
             # data left to read.
             if not chunk:
@@ -60,7 +60,7 @@ if __name__ == '__main__':
     client.send("GET / HTTP/1.0\r\n\r\n")
     response = client.read()
     print(response)
-    
+
     # Close the connection.
     client.close()
 
