@@ -87,13 +87,13 @@ class HTTPServer(TCPServer):
             self.send_error(queue)
             return
 
-        headers, data = self.handle_request()
-        response = "".join(headers) + data + "\r\n"
+        # Handle the request.
+        # handle_request will call the file handler which will deal with the
+        # reading of file, setting headers etc
+        self.handle_request()
 
-        # Socket needs data in byte
-        response = bytes(response, "utf-8")
-
-        queue.put(response)
+        # Send the response by putting the data in TCP server's queue
+        self.send_response(queue)
 
     def parse_request(self, data):
         """
@@ -139,12 +139,18 @@ class HTTPServer(TCPServer):
         """ Handles a single HTTP request """
         handler = FileSystemHandler(self.method, self.path,
                 directory=self.directory)
-        return handler.handle()
+        self.headers, self.data = handler.handle()
 
 
-    def send_response(self):
-        """ Sends response """
-        pass
+    def send_response(self, queue):
+        """ Sends response to the client """
+
+        # Join the headers and data to form the response
+        response = "".join(self.headers) + self.data + "\r\n"
+
+        # Socket needs data in byte
+        response = bytes(response, "utf-8")
+        queue.put(response)
 
 
     def send_error(self, queue):
