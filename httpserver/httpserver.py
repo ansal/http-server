@@ -188,16 +188,3 @@ class HTTPServer(TCPServer):
         date = datetime.datetime.now()
         print("[{}] -- {}".format(date, message))
 
-
-if __name__ == '__main__':
-
-    # Check if a directory is passed from the command line
-    try:
-        directory = sys.argv[1]
-    except IndexError:
-        directory = None
-
-    httpserver = HTTPServer('127.0.0.1', 8000, directory=directory)
-    httpserver.start()
-    httpserver.run()
-

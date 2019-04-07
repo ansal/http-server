@@ -1,6 +1,11 @@
 # An example showing the use of httpserver.TCPServer
 # Reverses the data received from the client and send it back
 
+import sys
+
+# Import httpserver in the python import path
+sys.path.insert(0, "./httpserver")
+
 from tcpserver import TCPServer
 
 
