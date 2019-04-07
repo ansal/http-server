@@ -2,6 +2,7 @@
 
 import sys
 from http import HTTPStatus
+import datetime
 
 from tcpserver import TCPServer
 from handler import FileSystemHandler
@@ -51,12 +52,14 @@ SUPPORTED_METHODS = ("HEAD", "GET", )
 # Similar to request, headers and data are separated by blank lines.
 
 class HTTPServer(TCPServer):
-    server_version = "HTTPServer/0.1"
+    server_version = "HTTPServer/0.1 github.com/ansal/http-server"
 
 
     def __init__(self, *args, directory=None, **kwargs):
         super().__init__(*args, callback=self.tcp_callback, bytes_count=65536, **kwargs)
         self.directory = directory
+
+        self.log("{} started".format(self.server_version))
 
 
     def tcp_callback(self, queue, data):
@@ -104,15 +107,12 @@ class HTTPServer(TCPServer):
 
         # Get the request method and see if it is in the supported list.
         # If it is not in the supported methods, set the errors and return
-        method = words[0]
-        if method not in SUPPORTED_METHODS:
+        self.method = words[0]
+        self.path = words[1]
+        if self.method not in SUPPORTED_METHODS:
             self.error_code = HTTPStatus.METHOD_NOT_ALLOWED
             self.error_text = "Not a supported method"
             return False
-
-        # Set the method and path
-        self.method = method
-        self.path = words[1]
 
         # Tell the callback that everything went fine.
         return True
@@ -135,6 +135,8 @@ class HTTPServer(TCPServer):
         response = bytes(response, "utf-8")
         queue.put(response)
 
+        self.log("{} {} -- {}".format(self.method, self.path, 200))
+
 
     def send_error(self, queue):
         """ Sends an error message to the client """
@@ -152,11 +154,13 @@ class HTTPServer(TCPServer):
         headers = bytes("\r\n".join(headers) + "\r\n", "utf-8")
         queue.put(headers)
 
+        self.log("{} {} -- {}".format(self.method, self.path, self.error_code))
 
-    def log(self):
+
+    def log(self, message):
         """ The logger """
-        pass
-
+        date = datetime.datetime.now()
+        print("[{}] -- {}".format(date, message))
 
 
 if __name__ == '__main__':
