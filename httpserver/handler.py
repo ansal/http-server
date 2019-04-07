@@ -77,12 +77,22 @@ class FileSystemHandler:
 
     def process_HEAD(self):
         """ Processes HEAD request """
-        pass
+
+        # Get the file path from the request path
+        self.get_file_path()
+
+        # Initialize the headers
+        self.init_headers()
+
+        # Unlike GET, HEAD only needs headers
+        self.end_header()
 
 
     def process_GET(self):
         """ Processes GET request """
-        file_name = self.get_file_path()
+
+        # Get the file path from the request path
+        self.get_file_path()
 
         # Initializes the headers
         self.init_headers()

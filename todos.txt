@@ -1,5 +1,7 @@
-Send proper Server name and version
-
-process_HEAD for serving HEAD requests
-
 Sending binary objects like images
+
+Fix the import issues
+
+Cleanup the repo
+
+Make the repo public
