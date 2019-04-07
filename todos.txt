@@ -1,24 +1,7 @@
-Default error message
-Default error content type
-
-Comment about how HTTP requests work and its format
-
-Server name and version
-
-Method for parsing a request
-	Determine the protocol version
-	Examine the headers to look for connection related information
-
-Handle a http connection
-
-Send an error method
-
-Send the response
-
-Send just the response header
+Send proper Server name and version
 
 Request logger
 
-process_GET for serving GET requests
-
 process_HEAD for serving HEAD requests
+
+Sending binary objects like images
