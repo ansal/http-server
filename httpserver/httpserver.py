@@ -82,17 +82,18 @@ class HTTPServer(TCPServer):
         # Once we have data from the TCP server, parse it first
         status = self.parse_request(data)
 
+        # If parse request failed, send an error code and message to the client
         if not status:
-            print(self.error_code, self.error_text)
-            queue.put(bytes(self.error_text, "utf-8"))
-        else:
-            headers, data = self.handle_request()
-            response = "".join(headers) + data + "\r\n"
+            self.send_error(queue)
+            return
 
-            # Socket needs data in byte
-            response = bytes(response, "utf-8")
+        headers, data = self.handle_request()
+        response = "".join(headers) + data + "\r\n"
 
-            queue.put(response)
+        # Socket needs data in byte
+        response = bytes(response, "utf-8")
+
+        queue.put(response)
 
     def parse_request(self, data):
         """
@@ -123,7 +124,7 @@ class HTTPServer(TCPServer):
         method = words[0]
         if method not in SUPPORTED_METHODS:
             self.error_code = HTTPStatus.METHOD_NOT_ALLOWED
-            self.error_text = "Not a supported method!"
+            self.error_text = "Not a supported method"
             return False
 
         # Set the method and path
@@ -146,9 +147,21 @@ class HTTPServer(TCPServer):
         pass
 
 
-    def send_error(self):
+    def send_error(self, queue):
         """ Sends an error message to the client """
-        pass
+
+        # Set the http error code and message
+        headers = [
+            "HTTP/1.0 {} {}".format(self.error_code, self.error_text)
+        ]
+        headers.append("Server: {}".format(self.server_version))
+
+        # Tell the client that the collection is closed
+        headers.append("Connection: close")
+
+        # Join the headers and put it in queue
+        headers = bytes("\r\n".join(headers) + "\r\n", "utf-8")
+        queue.put(headers)
 
 
     def log(self):
