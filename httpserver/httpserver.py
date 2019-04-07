@@ -130,11 +130,16 @@ class HTTPServer(TCPServer):
     def send_response(self, queue):
         """ Sends response to the client """
 
-        # Join the headers and data to form the response
-        response = "".join(self.headers) + self.data + "\r\n"
+        # Socket excepts the data in bytes format
 
-        # Socket needs data in byte
-        response = bytes(response, "utf-8")
+        # Build the headers part first
+        response = bytes("".join(self.headers), "utf=8")
+
+        # If there is data needs to be sent, put it in the response as well
+        if self.data:
+            response += bytes(self.data)
+
+        # Put the data in the TCP callback queue
         queue.put(response)
 
         self.log("{} {} -- {}".format(self.method, self.path, 200))

@@ -127,7 +127,7 @@ class FileSystemHandler:
     def read_file(self):
         """ Reads a file and return its contents """
         try:
-            f = open(self.file_path)
+            f = open(self.file_path, "rb")
         except Exception as e:
             raise e
         else:
