@@ -11,23 +11,6 @@ from handler import FileSystemHandler
 SUPPORTED_METHODS = ("HEAD", "GET", )
 
 
-# Default error message and type
-
-ERROR_MESSAGE = """
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Error</title>
-</head>
-<body>
-    Server error -
-</body>
-</html>
-"""
-ERROR_CONTENT_TYPE = "text/html;charset=utf-8"
-
-
 # All you need to know about HTTP can be found here - 
 # https://tools.ietf.org/html/rfc2616
 #
