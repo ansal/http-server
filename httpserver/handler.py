@@ -2,6 +2,7 @@
 
 import os
 import urllib.parse
+import mimetypes
 
 
 class FileSystemHandler:
@@ -37,10 +38,6 @@ class FileSystemHandler:
 
         # Check if a supported HTTP method is requested by the client
         # If not raise an exception.
-        # 
-        # TODO: We are not likely to come here as the http callback will itself
-        # handle the http method not implemented part.
-        #
         method_function = "process_" + self.method
         if not hasattr(self, method_function):
             raise Exception("Method not supported")
@@ -51,11 +48,18 @@ class FileSystemHandler:
         return (self.headers, self.response_buffer)
 
 
-    def send_header(self, file_name):
-        """ Sends the header for a request """
-        self.headers.append("HTTP/1.0 200 OK")
+    def init_headers(self):
+        """ Initializes headers for a request """
+
+        # Response code and version
+        self.headers.append("HTTP/1.0 200 OK\r\n")
+
+        # Server name
+        # TODO: Remove the hard coding
         self.set_header("Server", "ToyServer/0.1")
-        self.set_header("Content-type", "text/html")
+
+        # Content type of the resource
+        self.set_header("Content-type", mimetypes.guess_type(self.file_path)[0])
 
 
     def set_header(self, name, value):
@@ -76,9 +80,17 @@ class FileSystemHandler:
     def process_GET(self):
         """ Processes GET request """
         file_name = self.get_file_path()
-        self.send_header(file_name)
-        self.response_buffer = self.read_file(file_name)
-        self.set_header("Content-length", len(self.response_buffer))
+
+        # Initializes the headers
+        self.init_headers()
+
+        # Read the file
+        self.response_buffer = self.read_file()
+
+        # Set the content length
+        self.set_header("Content-length", str(len(self.response_buffer)))
+
+        # End the headers
         self.end_header()
 
 
@@ -92,21 +104,19 @@ class FileSystemHandler:
         # Unquote all url characters
         file_path = urllib.parse.unquote(file_path)
 
-        return self.directory + file_path
+        self.file_path = self.directory + file_path
+
+        # If the file is a directory, set the index.html as the file path
+        if os.path.isdir(self.file_path):
+            self.file_path += "index.html"
 
 
-    def read_file(self, file_name):
+    def read_file(self):
         """ Reads a file and return its contents """
         try:
-            f = open(file_name)
-        except IsADirectoryError:
-            # If a directory is specified as the path, try reading index.html
-            # from the path.
-            print(file_name + "index.html")
-            try:
-                f = open(file_name + "index.html")
-            except Exception as e:
-                raise e
-
-        return f.read()
+            f = open(self.file_path)
+        except Exception as e:
+            raise e
+        else:
+            return f.read()
 
