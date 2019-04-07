@@ -1,5 +1,6 @@
 # A simple implementation of HTTP server.
 
+import sys
 from http import HTTPStatus
 
 from tcpserver import TCPServer
@@ -69,8 +70,11 @@ ERROR_CONTENT_TYPE = "text/html;charset=utf-8"
 class HTTPServer(TCPServer):
     server_version = "HTTPServer/0.1"
 
-    def __init__(self, *args, **kwargs):
+
+    def __init__(self, *args, directory=None, **kwargs):
         super().__init__(*args, callback=self.tcp_callback, bytes_count=65536, **kwargs)
+        self.directory = directory
+
 
     def tcp_callback(self, queue, data):
         """ Callback for the TCP Server """
@@ -84,10 +88,6 @@ class HTTPServer(TCPServer):
         else:
             headers, data = self.handle_request()
             response = "".join(headers) + data + "\r\n"
-
-            print(headers)
-
-            print(response)
 
             # Socket needs data in byte
             response = bytes(response, "utf-8")
@@ -136,18 +136,9 @@ class HTTPServer(TCPServer):
 
     def handle_request(self):
         """ Handles a single HTTP request """
-        handler = FileSystemHandler(self.method, self.path)
+        handler = FileSystemHandler(self.method, self.path,
+                directory=self.directory)
         return handler.handle()
-
-
-    def send_header(self):
-        """ Sends header """
-        pass
-
-
-    def end_headers(self):
-        """ Sends a blank line ending the headers """
-        pass
 
 
     def send_response(self):
@@ -167,7 +158,14 @@ class HTTPServer(TCPServer):
 
 
 if __name__ == '__main__':
-    httpserver = HTTPServer('127.0.0.1', 8000)
+
+    # Check if a directory is passed from the command line
+    try:
+        directory = sys.argv[1]
+    except IndexError:
+        directory = None
+
+    httpserver = HTTPServer('127.0.0.1', 8000, directory=directory)
     httpserver.start()
     httpserver.run()
 
