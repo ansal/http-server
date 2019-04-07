@@ -76,12 +76,10 @@ class HTTPServer(TCPServer):
             return
 
         # Handle the request.
-        # handle_request will call the file handler which will deal with the
+        # handle_request will call the FileSystemHandler which will deal with the
         # reading of file, setting headers etc
-        self.handle_request()
+        self.handle_request(queue)
 
-        # Send the response by putting the data in TCP server's queue
-        self.send_response(queue)
 
     def parse_request(self, data):
         """
@@ -120,11 +118,32 @@ class HTTPServer(TCPServer):
         return True
 
 
-    def handle_request(self):
+    def handle_request(self, queue):
         """ Handles a single HTTP request """
         handler = FileSystemHandler(self.method, self.path,
                 directory=self.directory, server_version=self.server_version)
-        self.headers, self.data = handler.handle()
+
+        # Let the FileSystemHandler try to read and return the file.
+        try:
+            self.headers, self.data = handler.handle()
+
+        # If file is not found, send a 404 status
+        except FileNotFoundError:
+            self.error_code = HTTPStatus.NOT_FOUND
+            self.error_text = "File not found"
+            self.send_error(queue)
+
+        # Any other exception, we will treat it as an internal server error
+        except Exception as e:
+            print(e)
+            self.error_code = HTTPStatus.INTERNAL_SERVER_ERROR
+            self.error_text = "Server error occurred"
+            self.send_error(queue)
+
+        # If all is well, send the data back to the tcp queue
+        else:
+            # Send the response by putting the data in TCP server's queue
+            self.send_response(queue)
 
 
     def send_response(self, queue):
